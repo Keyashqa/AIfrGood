@@ -284,6 +284,11 @@ Write the explanation field for a junior doctor or patient:
 • Reference the key findings that drove the decision
 • Mention which specialists raised concerns and why
 • Do NOT dump raw scores — synthesize them into narrative
+• NEVER use internal system labels in prose:
+  - Do NOT write "RED_FLAG" or "YELLOW_FLAG" — these are internal schema labels
+  - Instead write: "critical concern raised by Cardiology", "urgent warning from Neurology",
+    "multiple specialists raised high-priority alerts", "Emergency Medicine flagged immediate danger"
+  - The word "flag" is acceptable; the ALL-CAPS severity label is not
 
 ═══════════════════════════════════════
 RECOMMENDED ACTION MAPPING

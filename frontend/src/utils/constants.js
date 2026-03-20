@@ -20,7 +20,7 @@ export const PRIORITY_COLORS = {
 export const ACTION_COLORS = {
   Immediate: '#D32F2F',
   Urgent: '#F57C00',
-  Standard: '#ED6C02',
+  Standard: '#0277BD',   // blue — normal clinical queue, no urgency
   'Can Wait': '#388E3C',
 };
 

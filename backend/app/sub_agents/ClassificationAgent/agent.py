@@ -277,6 +277,15 @@ class ClassificationAgentImpl(BaseAgent):
             print("\n❌ ERROR: raw_data and user_input both missing in session state\n")
             return
 
+        # Pydantic model → dict so .get() works regardless of how ADK stored it
+        if hasattr(user_input, "model_dump"):
+            user_input = user_input.model_dump()
+
+        # WhatsApp sends user_input as plain string — not usable for XGBoost
+        if isinstance(user_input, str):
+            print("\n❌ ERROR: user_input is a plain string; IngestAgent likely failed to produce raw_data\n")
+            return
+
         if not self._model or not self._label_encoder:
             print("\n❌ ERROR: Model artifacts not loaded\n")
             return

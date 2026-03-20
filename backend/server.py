@@ -1,14 +1,18 @@
 import os
+import re
 import json
 import uuid
 import asyncio
+import httpx
+import fitz  # PyMuPDF
 from datetime import datetime
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException, UploadFile, File, Depends
+from fastapi import FastAPI, HTTPException, UploadFile, File, Depends, Request
 from fastapi.responses import StreamingResponse, Response
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Optional, Dict, List, Any
+from twilio.twiml.messaging_response import MessagingResponse
 
 from google.adk.runners import Runner
 from google.adk.sessions import InMemorySessionService
@@ -44,6 +48,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
+app.add_middleware(ProxyHeadersMiddleware, trusted_hosts="*")
 
 
 @app.on_event("startup")
@@ -204,8 +211,25 @@ def compute_specialist_summaries(state: Dict) -> List[Dict]:
     return summaries
 
 
+_WORKUP_NOISE = re.compile(
+    r'\s*\([^)]*\)'                        # parenthetical suffixes: (Non-Contrast), (PA View)
+    r'|\b(stat|urgent|routine|immediate'
+    r'|serial|repeat|fasting|random'
+    r'|non-contrast|with contrast|without contrast'
+    r'|portable|bedside)\b',
+    re.IGNORECASE,
+)
+
+def _workup_key(test_name: str) -> str:
+    """Normalise a test name for deduplication. Strips qualifiers and parentheticals."""
+    base = _WORKUP_NOISE.sub('', test_name)
+    return re.sub(r'\s+', ' ', base).strip().lower()
+
+
 def compute_consolidated_workup(state: Dict) -> List[Dict]:
     test_map: Dict[str, Dict] = {}
+    priority_rank = {"STAT": 3, "URGENT": 2, "ROUTINE": 1}
+
     for key, name in SPECIALIST_KEYS:
         opinion = _to_dict(state.get(key))
         if not opinion:
@@ -216,20 +240,25 @@ def compute_consolidated_workup(state: Dict) -> List[Dict]:
             test_name = item.get("test", "").strip()
             if not test_name:
                 continue
-            normalized = test_name.lower()
-            if normalized in test_map:
-                existing = test_map[normalized]
-                existing["ordered_by"].append(name)
-                priority_rank = {"STAT": 3, "URGENT": 2, "ROUTINE": 1}
-                if priority_rank.get(item.get("priority", "ROUTINE"), 1) > priority_rank.get(existing["priority"], 1):
-                    existing["priority"] = item.get("priority", "ROUTINE")
+            dedup_key = _workup_key(test_name)
+            item_priority = item.get("priority", "ROUTINE")
+            if dedup_key in test_map:
+                existing = test_map[dedup_key]
+                if name not in existing["ordered_by"]:
+                    existing["ordered_by"].append(name)
+                # Keep highest priority; prefer shorter/cleaner display name
+                if priority_rank.get(item_priority, 1) > priority_rank.get(existing["priority"], 1):
+                    existing["priority"] = item_priority
+                if len(test_name) < len(existing["test"]):
+                    existing["test"] = test_name
             else:
-                test_map[normalized] = {
+                test_map[dedup_key] = {
                     "test": test_name,
-                    "priority": item.get("priority", "ROUTINE"),
+                    "priority": item_priority,
                     "rationale": item.get("rationale", ""),
                     "ordered_by": [name],
                 }
+
     priority_order = {"STAT": 0, "URGENT": 1, "ROUTINE": 2}
     return sorted(test_map.values(), key=lambda x: priority_order.get(x["priority"], 2))
 
@@ -520,6 +549,12 @@ async def start_triage(patient: PatientData, doctor_id: int = Depends(get_curren
     initial_state = {
         "user_input": patient_dict,
         "facility_level": patient.facility_level or "District Hospital",
+        "cardiology_opinion": "Not available",
+        "neurology_opinion": "Not available",
+        "pulmonology_opinion": "Not available",
+        "emergency_medicine_opinion": "Not available",
+        "general_medicine_opinion": "Not available",
+        "other_specialty_opinion": "Not available",
     }
 
     await ensure_session(user_id, session_id, initial_state)
@@ -823,6 +858,7 @@ async def run_agent_stream(req: RunRequest):
             yield f"data: {json.dumps({'error': str(e)})}\n\n"
 
     return StreamingResponse(event_generator(), media_type="text/event-stream")
+
 
 
 # ─────────────────────────────────────────

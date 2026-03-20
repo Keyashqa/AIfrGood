@@ -164,7 +164,17 @@ async def whatsapp_callback(request: Request):
             app_name=APP_NAME,
             user_id=user_id,
             session_id=session_id,
-            state={"user_input": final_input_text}
+            state={
+                "user_input": final_input_text,
+                "facility_level": "District Hospital",
+                "classification_result": {},
+                "cardiology_opinion": "Not available",
+                "neurology_opinion": "Not available",
+                "pulmonology_opinion": "Not available",
+                "emergency_medicine_opinion": "Not available",
+                "general_medicine_opinion": "Not available",
+                "other_specialty_opinion": "Not available",
+            }
         )
 
         # 3. TRIGGER AGENT RUN

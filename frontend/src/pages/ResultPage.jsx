@@ -19,12 +19,14 @@ import WorkupTable from '../components/result/WorkupTable';
 import CouncilSummary from '../components/result/CouncilSummary';
 import OtherDepartments from '../components/result/OtherDepartments';
 import { saveDoctorNotes, downloadReport, getDoctorNotes } from '../api/triageApi';
+import { RISK_COLORS } from '../utils/constants';
 
+// Urgency gradient: Immediate (deep red) → 1hr (deep orange) → 4hrs (amber) → Elective (green)
 const URGENCY_CONFIG = {
-  IMMEDIATE: { color: '#B71C1C', label: 'IMMEDIATE — Call NOW', bg: '#FFEBEE' },
-  WITHIN_1HR: { color: '#E65100', label: 'Within 1 Hour', bg: '#FFF3E0' },
-  WITHIN_4HRS: { color: '#F57F17', label: 'Within 4 Hours', bg: '#FFFDE7' },
-  ELECTIVE: { color: '#2E7D32', label: 'Elective / Scheduled', bg: '#E8F5E9' },
+  IMMEDIATE:  { color: '#B71C1C', label: 'IMMEDIATE — Call NOW',   bg: '#FFEBEE' },
+  WITHIN_1HR: { color: '#E65100', label: 'Within 1 Hour',          bg: '#FFF3E0' },
+  WITHIN_4HRS:{ color: '#F9A825', label: 'Within 4 Hours',         bg: '#FFFDE7' },
+  ELECTIVE:   { color: '#388E3C', label: 'Elective / Scheduled',   bg: '#E8F5E9' },
 };
 
 function ManagementPlan({ verdict }) {
@@ -154,9 +156,9 @@ function BridgingCare({ verdict }) {
   if (!actions.length) return <Typography color="text.secondary">No bridging care plan generated.</Typography>;
   return (
     <Box>
-      <Paper sx={{ p: 2, mb: 2, bgcolor: '#FFF8E1', borderLeft: '6px solid #F57F17' }}>
+      <Paper sx={{ p: 2, mb: 2, bgcolor: '#FFF8E1', borderLeft: `6px solid ${URGENCY_CONFIG.WITHIN_4HRS.color}` }}>
         <Stack direction="row" spacing={1} alignItems="flex-start">
-          <WarningAmber sx={{ color: '#F57F17', mt: 0.25, flexShrink: 0 }} />
+          <WarningAmber sx={{ color: URGENCY_CONFIG.WITHIN_4HRS.color, mt: 0.25, flexShrink: 0 }} />
           <Typography variant="body2" fontWeight={600}>{note}</Typography>
         </Stack>
       </Paper>
