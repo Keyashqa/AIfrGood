@@ -10,7 +10,7 @@ React + Vite clinical dashboard for the Ydhya AI triage system. Doctors use this
 |-------|------|-------------|
 | `/login` | LoginPage | Register / login. JWT stored in `localStorage` |
 | `/` | TriagePage | Patient intake form → starts triage → live SSE log panel |
-| `/result` | ResultPage | Full AI verdict — risk, priority score, safety alerts, workup table, council summary, department routing. Download PDF + save doctor's notes |
+| `/result` | ResultPage | Full AI verdict — risk, priority score, safety alerts, workup table, treatment plan, bridging care, council summary, department routing. Download PDF + save doctor's notes |
 | `/council` | CouncilPage | Radar chart + expandable specialist cards with scores, flags, and differentials |
 | `/queue` | QueuePage | Priority-sorted table of all active patients with risk/department/alert filters |
 | `/analytics` | AnalyticsPage | Stat cards, risk distribution pie, department load bar chart, trend lines, alert frequency |
@@ -32,7 +32,7 @@ React + Vite clinical dashboard for the Ydhya AI triage system. Doctors use this
 | `streamEvents` | SSE log event history |
 | `phase` | Pipeline phase (`idle` / `running` / `done`) |
 | `token` | JWT token (persisted in `localStorage`) |
-| `doctor` | Logged-in doctor profile |
+| `doctor` | Logged-in doctor profile (includes `facility_level`) |
 
 ---
 
@@ -42,7 +42,10 @@ React + Vite clinical dashboard for the Ydhya AI triage system. Doctors use this
 
 | Function | Description |
 |----------|-------------|
-| `startTriage(data)` | `POST /api/triage` — converts temperature F→C before sending |
+| `register(username, password, name, facility_level)` | `POST /api/auth/register` |
+| `login(username, password)` | `POST /api/auth/login` — returns JWT + doctor profile |
+| `updateFacilityLevel(level)` | `PUT /api/auth/facility` |
+| `startTriage(data)` | `POST /api/triage` — sends temperature in °F |
 | `connectSSE(sessionId, handlers)` | Opens `EventSource` for live pipeline events |
 | `getPatients()` | `GET /api/dashboard/patients` |
 | `getStats()` | `GET /api/dashboard/stats` |
@@ -50,6 +53,7 @@ React + Vite clinical dashboard for the Ydhya AI triage system. Doctors use this
 | `getDoctorNotes(id)` | `GET /api/patients/{id}/notes` |
 | `saveDoctorNotes(id, notes)` | `POST /api/patients/{id}/notes` |
 | `downloadReport(id)` | `GET /api/patients/{id}/report.pdf` — returns Blob |
+| `uploadDocument(file)` | `POST /api/upload/document` |
 
 ### `src/api/quickTriageApi.js`
 
@@ -65,17 +69,17 @@ React + Vite clinical dashboard for the Ydhya AI triage system. Doctors use this
 src/components/
 ├── common/
 │   ├── RiskBadge.jsx          # Colour-coded risk chip (Low / Medium / High)
-│   ├── PriorityBadge.jsx      # Priority status chip
+│   ├── PriorityBadge.jsx      # P1–P4 MOHFW priority label
 │   ├── PriorityCircle.jsx     # Circular priority score (0–100)
-│   ├── ActionChip.jsx         # Recommended action chip
-│   └── FlagChip.jsx           # Red / yellow / info flag chip
+│   ├── ActionChip.jsx         # Recommended action chip (Immediate / Urgent / Standard / Can Wait)
+│   └── FlagChip.jsx           # RED_FLAG / YELLOW_FLAG / INFO chip
 ├── intake/
-│   ├── PatientForm.jsx        # Demographics + vitals form
+│   ├── PatientForm.jsx        # Demographics + vitals + symptoms + conditions form
 │   └── DocumentUpload.jsx     # Drag-and-drop document upload
 ├── stream/
 │   └── SSELogPanel.jsx        # Dark terminal-style live pipeline log
 ├── result/
-│   ├── VerdictHeader.jsx      # Risk banner + priority circle
+│   ├── VerdictHeader.jsx      # Risk banner + priority circle + CMO action
 │   ├── SafetyAlerts.jsx       # CRITICAL / WARNING alert list
 │   ├── ExplanationCard.jsx    # CMO reasoning + key factors
 │   ├── WorkupTable.jsx        # Ordered investigations by priority
@@ -84,8 +88,8 @@ src/components/
 │   └── OtherDepartments.jsx   # Additional flagged departments
 └── council/
     ├── SpecialistCard.jsx     # Expandable specialist opinion card
-    ├── ConsensusBar.jsx       # Council consensus visualisation
-    └── CouncilRadar.jsx       # Radar chart of specialist scores
+    ├── ConsensusBar.jsx       # Council consensus visualisation (Unanimous / Majority / Split)
+    └── CouncilRadar.jsx       # Radar chart of specialist relevance vs urgency scores
 ```
 
 ---
@@ -104,8 +108,9 @@ Requires the backend running on `localhost:8000`. Vite proxies all `/api` reques
 
 ## Design System
 
-- **Component library**: Material UI v5
+- **Component library**: Material UI v7
 - **Theme**: `src/theme.js` — primary `#1565C0`, secondary `#00897B`, background `#F5F6FA`
 - **Typography**: Inter / Roboto, heading weights 700–800
 - **Cards**: `borderRadius: 12px`, soft shadow `0 2px 8px rgba(0,0,0,0.08)`
 - **Sidebar**: Collapses to 60px icons-only, expands to 220px on hover
+- **Logo**: `src/assets/logo.png` — Ydhya Y-mark wordmark

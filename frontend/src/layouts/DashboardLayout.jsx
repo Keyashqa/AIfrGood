@@ -8,6 +8,7 @@ import {
   LocalHospital, People, Groups, BarChart, Bolt, Menu as MenuIcon, Logout, Info,
 } from '@mui/icons-material';
 import useTriageStore from '../state/triageStore';
+import logo from '../assets/logo.png';
 
 const DRAWER_W = 220;
 const COLLAPSED_W = 60;
@@ -33,16 +34,10 @@ function SidebarContent({ expanded, onNavigate, pathname }) {
         overflow: 'hidden',
         whiteSpace: 'nowrap',
       }}>
-        <LocalHospital sx={{ color: 'primary.main', fontSize: 28, flexShrink: 0 }} />
-        {expanded && (
-          <Box>
-            <Typography variant="subtitle1" fontWeight={700} color="primary.main" lineHeight={1.1}>
-              Ydhya
-            </Typography>
-            <Typography variant="caption" color="text.secondary">
-              Rapid Triage
-            </Typography>
-          </Box>
+        {expanded ? (
+          <img src={logo} alt="Ydhya" style={{ height: 36, objectFit: 'contain' }} />
+        ) : (
+          <img src={logo} alt="Ydhya" style={{ height: 28, width: 28, objectFit: 'contain', objectPosition: 'left' }} />
         )}
       </Box>
 

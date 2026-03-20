@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   Box, Card, CardContent, TextField, Button, Typography, Alert, Tabs, Tab,
 } from '@mui/material';
-import { LocalHospital } from '@mui/icons-material';
+import logo from '../assets/logo.png';
 import axios from 'axios';
 import useTriageStore from '../state/triageStore';
 
@@ -50,12 +50,8 @@ export default function LoginPage() {
     }}>
       <Card sx={{ width: 380, boxShadow: 4 }}>
         <CardContent sx={{ p: 4 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 3 }}>
-            <LocalHospital sx={{ color: 'primary.main', fontSize: 32 }} />
-            <Box>
-              <Typography variant="h6" fontWeight={700} color="primary.main" lineHeight={1.1}>Ydhya</Typography>
-              <Typography variant="caption" color="text.secondary">Rapid Triage System</Typography>
-            </Box>
+          <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+            <img src={logo} alt="Ydhya" style={{ height: 40, objectFit: 'contain' }} />
           </Box>
 
           <Tabs value={tab} onChange={(_, v) => { setTab(v); setError(''); }} sx={{ mb: 3 }}>
