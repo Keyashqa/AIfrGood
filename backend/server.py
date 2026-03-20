@@ -4,7 +4,6 @@ import json
 import uuid
 import asyncio
 import httpx
-import fitz  # PyMuPDF
 from datetime import datetime
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, UploadFile, File, Depends, Request
