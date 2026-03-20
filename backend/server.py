@@ -11,7 +11,6 @@ from fastapi.responses import StreamingResponse, Response
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Optional, Dict, List, Any
-from twilio.twiml.messaging_response import MessagingResponse
 
 from google.adk.runners import Runner
 from google.adk.sessions import InMemorySessionService
